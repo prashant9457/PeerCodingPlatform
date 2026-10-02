@@ -1,10 +1,15 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { NeonAuthUIProvider } from "@neondatabase/auth-ui";
+import "@neondatabase/auth-ui/css";
+import { authClient } from "./auth/authClient.js";
+import App from "./App.js";
+import "./index.css";
 
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <NeonAuthUIProvider authClient={authClient}>
+      <App />
+    </NeonAuthUIProvider>
   </StrictMode>,
-)
+);
