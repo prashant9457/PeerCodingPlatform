@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchQuestionBySlug, type QuestionDetail } from '../api/questionApi.js';
 
@@ -124,8 +124,9 @@ export function QuestionPage() {
         </section>
       )}
 
-      <div style={{ marginTop: 24 }}>
-        <Link to="/match" className="btn btn-primary">Start a live session →</Link>
+      <div style={{ marginTop: 24, display: 'flex', gap: 8 }}>
+        <Link to={`/match?slug=${question.slug}`} className="btn btn-primary">Solve this problem →</Link>
+        <Link to="/questions" className="btn">← Back</Link>
       </div>
     </div>
   );
