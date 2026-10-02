@@ -17,6 +17,7 @@ import type { Server as HttpServer } from "node:http";
 import { Server } from "socket.io";
 import { env } from "../config/env.js";
 import { registerMatchmakingHandlers } from "./matchmaking.socket.js";
+import { registerRoomHandlers } from "./room.socket.js";
 
 export function initSocketIO(httpServer: HttpServer): Server {
   const io = new Server(httpServer, {
@@ -60,6 +61,7 @@ export function initSocketIO(httpServer: HttpServer): Server {
     );
 
     registerMatchmakingHandlers(io, socket);
+    registerRoomHandlers(io, socket);
 
     socket.on("disconnect", (reason) => {
       console.log(

@@ -124,9 +124,8 @@ export function QuestionPage() {
         </section>
       )}
 
-      <div style={{ marginTop: 24, display: 'flex', gap: 8 }}>
-        <Link to={`/match?slug=${question.slug}`} className="btn btn-primary">Solve this problem →</Link>
-        <Link to="/questions" className="btn">← Back</Link>
+      <div style={{ marginTop: 24 }}>
+        <Link to="/match" className="btn btn-primary">Start a live session →</Link>
       </div>
     </div>
   );

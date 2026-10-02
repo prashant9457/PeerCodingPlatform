@@ -17,6 +17,8 @@ export function AppLayout() {
     <Link to={to} className={`${pathname === to || pathname.startsWith(to + '/') ? 'active' : ''}`}>{label}</Link>
   );
 
+  const isFullWidth = pathname.startsWith('/room');
+
   return (
     <>
       <header className="gh-header">
@@ -51,9 +53,13 @@ export function AppLayout() {
         </div>
       </header>
 
-      <div className="page-container">
+      {isFullWidth ? (
         <Outlet />
-      </div>
+      ) : (
+        <div className="page-container">
+          <Outlet />
+        </div>
+      )}
     </>
   );
 }

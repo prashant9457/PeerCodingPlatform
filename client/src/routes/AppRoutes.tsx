@@ -1,10 +1,11 @@
-import { Routes, Route } from 'react-router-dom';
+﻿import { Routes, Route } from 'react-router-dom';
 import { AppLayout } from '../components/layout/AppLayout.js';
 import { HomePage } from '../pages/HomePage.js';
 import { AuthPage } from '../pages/AuthPage.js';
 import { QuestionsPage } from '../pages/QuestionsPage.js';
 import { QuestionPage } from '../pages/QuestionPage.js';
 import { MatchPage } from '../pages/MatchPage.js';
+import { RoomPage } from '../pages/RoomPage.js';
 
 export function AppRoutes() {
   return (
@@ -16,6 +17,7 @@ export function AppRoutes() {
         <Route path="/questions" element={<QuestionsPage />} />
         <Route path="/questions/:slug" element={<QuestionPage />} />
         <Route path="/match" element={<MatchPage />} />
+        <Route path="/room/:roomId" element={<RoomPage />} />
       </Route>
     </Routes>
   );

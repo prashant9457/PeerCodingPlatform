@@ -1,16 +1,9 @@
-/**
+﻿/**
  * Matchmaking Service
  *
  * Pure business logic — no Socket.IO, no Express, no SQL.
  * All operations are synchronous and atomic from the application's
  * perspective (single Node.js event-loop thread).
- *
- * Responsibilities:
- *   - Validate queue criteria.
- *   - Manage the in-memory queue via MatchmakingQueue.
- *   - Detect compatible pairs.
- *   - Construct Match objects with a unique roomId.
- *   - Handle disconnect cleanup by stable userId.
  */
 
 import { z } from "zod";
@@ -40,6 +33,12 @@ const QueueCriteriaSchema = z.object({
     .min(1, "topic must not be empty when provided")
     .max(80, "topic is too long")
     .optional(),
+  questionSlug: z
+    .string()
+    .trim()
+    .min(1)
+    .max(120)
+    .optional(),
 });
 
 // ─── Service ─────────────────────────────────────────────────────────────────
@@ -53,12 +52,12 @@ export class MatchmakingService {
    * Parse and validate raw queue criteria from Socket.IO payload.
    * Returns the normalized criteria or throws a ZodError.
    */
-  validateCriteria(raw: { difficulty: unknown; topic?: unknown }): QueueCriteria {
+  validateCriteria(raw: { difficulty: unknown; topic?: unknown; questionSlug?: unknown }): QueueCriteria {
     const parsed = QueueCriteriaSchema.parse(raw);
     return {
       difficulty: parsed.difficulty as Difficulty,
-      // Normalize topic to lowercase for case-insensitive matching
       topic: parsed.topic ? parsed.topic.toLowerCase() : undefined,
+      questionSlug: parsed.questionSlug ?? undefined,
     };
   }
 
@@ -76,6 +75,7 @@ export class MatchmakingService {
       socketId,
       difficulty: criteria.difficulty,
       topic: criteria.topic,
+      questionSlug: criteria.questionSlug,
       joinedAt: Date.now(),
     };
 
@@ -123,7 +123,6 @@ export class MatchmakingService {
     if (!partner) return { kind: "waiting" };
 
     // ── Critical section: remove both atomically ──────────────────────────
-    // Both removals happen synchronously within a single event-loop tick.
     this.queue.removeByUserId(seeker.userId);
     this.queue.removeByUserId(partner.userId);
 
@@ -134,8 +133,8 @@ export class MatchmakingService {
   // ── Internal ────────────────────────────────────────────────────────────────
 
   private createMatch(a: QueueEntry, b: QueueEntry): Match {
-    // Choose the shared topic: prefer a specific topic if one exists
     const matchedTopic = a.topic ?? b.topic;
+    const preferredSlug = a.questionSlug ?? b.questionSlug;
 
     return {
       roomId: randomUUID(),
@@ -145,6 +144,7 @@ export class MatchmakingService {
       ],
       difficulty: a.difficulty,
       topic: matchedTopic,
+      questionSlug: preferredSlug,
       createdAt: Date.now(),
     };
   }
@@ -157,13 +157,4 @@ export class MatchmakingService {
   }
 }
 
-/**
- * Process-local singleton instance.
- *
- * SCALABILITY NOTE: This singleton is scoped to a single Node.js process.
- * If the server runs across multiple instances (horizontal scaling), each
- * process will maintain its own independent queue — users on different
- * instances cannot be matched. Introduce Redis (or a shared PostgreSQL table
- * with advisory locks) to solve this when horizontal scaling is required.
- */
 export const matchmakingService = new MatchmakingService();

@@ -1,11 +1,11 @@
-import type { Difficulty } from "../types/question.types.js";
+﻿import type { Difficulty } from "../types/question.types.js";
 
 // ─── Queue entry ────────────────────────────────────────────────────────────
 
 /**
  * A single user waiting in the matchmaking queue.
  *
- * userId  – stable identity from the authentication layer (socket.data.userId).
+ * userId   – stable identity from the authentication layer (socket.data.userId).
  * socketId – the current realtime connection; changes on reconnect.
  */
 export interface QueueEntry {
@@ -13,7 +13,9 @@ export interface QueueEntry {
   readonly socketId: string;
   readonly difficulty: Difficulty;
   /** Normalized (lowercase, trimmed) topic. Undefined means "any topic". */
-  readonly topic: string | undefined;
+  readonly topic?: string | undefined;
+  /** Optional preferred question slug (e.g. if arriving from question page). */
+  readonly questionSlug?: string | undefined;
   readonly joinedAt: number;
 }
 
@@ -28,7 +30,8 @@ export interface Match {
   readonly roomId: string;
   readonly participants: readonly [Participant, Participant];
   readonly difficulty: Difficulty;
-  readonly topic: string | undefined;
+  readonly topic?: string | undefined;
+  readonly questionSlug?: string | undefined;
   readonly createdAt: number;
 }
 
@@ -60,6 +63,7 @@ export type MatchmakingErrorCode =
 export interface QueueCriteria {
   readonly difficulty: Difficulty;
   readonly topic?: string | undefined;
+  readonly questionSlug?: string | undefined;
 }
 
 // ─── Socket.IO event payloads ────────────────────────────────────────────────
@@ -68,6 +72,7 @@ export interface QueueCriteria {
 export interface QueueJoinPayload {
   difficulty: unknown;
   topic?: unknown;
+  questionSlug?: unknown;
 }
 
 /** Emitted to the client on queue:joined */
@@ -86,6 +91,7 @@ export interface MatchFoundPayload {
   partner: { userId: string };
   difficulty: Difficulty;
   topic?: string;
+  questionSlug: string;
 }
 
 /** Emitted to the client on matchmaking:error */
