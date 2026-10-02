@@ -2,10 +2,9 @@
 import { useParams, Link } from 'react-router-dom';
 import { fetchQuestionBySlug, type QuestionDetail } from '../api/questionApi.js';
 
-function DifficultyBadge({ difficulty }: { difficulty: string }) {
-  const color = difficulty === 'easy' ? '#22543d' : difficulty === 'medium' ? '#744210' : '#742a2a';
-  const bg = difficulty === 'easy' ? '#c6f6d5' : difficulty === 'medium' ? '#feebc8' : '#fed7d7';
-  return <span style={{ display: 'inline-block', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.85rem', fontWeight: '600', textTransform: 'capitalize', backgroundColor: bg, color }}>{difficulty}</span>;
+function DifficultyLabel({ difficulty }: { difficulty: string }) {
+  const cls = difficulty === 'easy' ? 'label label-easy' : difficulty === 'medium' ? 'label label-medium' : 'label label-hard';
+  return <span className={cls} style={{ textTransform: 'capitalize' }}>{difficulty}</span>;
 }
 
 export function QuestionPage() {
@@ -13,73 +12,121 @@ export function QuestionPage() {
   const [question, setQuestion] = useState<QuestionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('typescript');
 
   useEffect(() => {
     if (!slug) return;
-    let isMounted = true;
-    setLoading(true);
-    setError(null);
+    let active = true;
     fetchQuestionBySlug(slug)
-      .then((data) => { if (isMounted) { setQuestion(data); setLoading(false); } })
-      .catch((err: Error) => { if (isMounted) { setError(err.message); setLoading(false); } });
-    return () => { isMounted = false; };
+      .then((data) => { if (active) { setQuestion(data); setLoading(false); } })
+      .catch((err: Error) => { if (active) { setError(err.message); setLoading(false); } });
+    return () => { active = false; };
   }, [slug]);
 
-  if (loading) return <div style={{ padding: '2rem 0', textAlign: 'center', color: '#666' }}>Loading question...</div>;
+  if (loading) return <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--color-fg-muted)' }}>Loading…</div>;
   if (error || !question) return (
-    <div style={{ padding: '1.5rem', backgroundColor: '#fff5f5', border: '1px solid #fed7d7', borderRadius: '6px', color: '#c53030' }}>
-      <h3 style={{ marginTop: 0 }}>Unable to load question</h3>
-      <p style={{ margin: '0 0 0.5rem' }}>{error || 'Question data unavailable.'}</p>
-      <Link to="/questions" style={{ color: '#2b6cb0' }}>Back to Questions</Link>
+    <div>
+      <Link to="/questions" className="text-muted" style={{ fontSize: 13 }}>← Questions</Link>
+      <div className="flash flash-error mt-3">{error || 'Question not found.'}</div>
     </div>
   );
 
-  const starterCode = question.starter_code || question.starterCode;
+  const starterCode = question.starter_code || question.starterCode || {};
+  const langs = Object.keys(starterCode);
+  const currentTab = langs.includes(activeTab) ? activeTab : langs[0] || '';
 
   return (
-    <div style={{ maxWidth: '720px' }}>
-      <div style={{ marginBottom: '0.5rem' }}>
-        <Link to="/questions" style={{ color: '#718096', fontSize: '0.9rem', textDecoration: 'none' }}>Questions</Link>
+    <div style={{ maxWidth: 800 }}>
+      {/* Breadcrumb */}
+      <nav style={{ marginBottom: 16, fontSize: 14, color: 'var(--color-fg-muted)' }}>
+        <Link to="/questions">Questions</Link>
+        <span style={{ margin: '0 6px' }}>/</span>
+        <span style={{ color: 'var(--color-fg-default)', fontWeight: 500 }}>{question.title}</span>
+      </nav>
+
+      {/* Title row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>{question.title}</h1>
+        <DifficultyLabel difficulty={question.difficulty} />
       </div>
-      <h1 style={{ marginBottom: '0.5rem' }}>{question.title}</h1>
-      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap' }}>
-        <DifficultyBadge difficulty={question.difficulty} />
-        {Array.isArray(question.topics) && question.topics.length > 0
-          ? <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>{question.topics.map((t) => <span key={t} style={{ fontSize: '0.8rem', padding: '0.15rem 0.5rem', backgroundColor: '#ebf4ff', color: '#2b6cb0', borderRadius: '9999px' }}>{t}</span>)}</div>
-          : question.topic ? <span style={{ fontSize: '0.9rem', color: '#4a5568' }}>{question.topic}</span> : null}
-      </div>
-      {question.description && <section style={{ marginBottom: '1.5rem' }}><h3>Description</h3><div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, color: '#2d3748' }}>{question.description}</div></section>}
+
+      {/* Topics */}
+      {Array.isArray(question.topics) && question.topics.length > 0 && (
+        <div className="topics-row mb-4">
+          {question.topics.map((t) => <span key={t} className="label label-topic">{t}</span>)}
+        </div>
+      )}
+
+      {/* Description */}
+      {question.description && (
+        <section style={{ marginBottom: 24, padding: 16, background: 'var(--color-canvas-subtle)', border: '1px solid var(--color-border-default)', borderRadius: 6 }}>
+          <h3>Description</h3>
+          <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, fontSize: 14 }}>{question.description}</div>
+        </section>
+      )}
+
+      {/* Examples */}
       {Array.isArray(question.examples) && question.examples.length > 0 && (
-        <section style={{ marginBottom: '1.5rem' }}>
+        <section style={{ marginBottom: 24 }}>
           <h3>Examples</h3>
           {question.examples.map((ex, idx) => (
-            <div key={idx} style={{ backgroundColor: '#f7fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '0.75rem 1rem', marginBottom: '0.75rem' }}>
-              <strong>Example {ex.number ?? idx + 1}</strong>
-              {ex.input && <div style={{ marginTop: '0.4rem' }}><code><strong>Input:</strong> {ex.input}</code></div>}
-              {ex.output && <div><code><strong>Output:</strong> {ex.output}</code></div>}
-              {ex.explanation && <div style={{ marginTop: '0.3rem', color: '#4a5568', fontSize: '0.92rem' }}><strong>Explanation:</strong> {ex.explanation}</div>}
-              {ex.text && !ex.input && !ex.output && <div style={{ whiteSpace: 'pre-wrap', marginTop: '0.4rem', color: '#4a5568' }}>{ex.text}</div>}
+            <div key={idx} style={{ background: 'var(--color-canvas-subtle)', border: '1px solid var(--color-border-default)', borderRadius: 6, padding: '12px 16px', marginBottom: 8, fontSize: 14 }}>
+              <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--color-fg-muted)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Example {ex.number ?? idx + 1}</div>
+              {ex.input && <div style={{ marginBottom: 2 }}><strong>Input:</strong> <code>{ex.input}</code></div>}
+              {ex.output && <div style={{ marginBottom: 2 }}><strong>Output:</strong> <code>{ex.output}</code></div>}
+              {ex.explanation && <div style={{ color: 'var(--color-fg-muted)', marginTop: 4 }}><strong>Explanation:</strong> {ex.explanation}</div>}
+              {ex.text && !ex.input && !ex.output && <div style={{ whiteSpace: 'pre-wrap', color: 'var(--color-fg-muted)' }}>{ex.text}</div>}
             </div>
           ))}
         </section>
       )}
+
+      {/* Constraints */}
       {question.constraints && (
-        <section style={{ marginBottom: '1.5rem' }}>
+        <section style={{ marginBottom: 24 }}>
           <h3>Constraints</h3>
-          <div style={{ backgroundColor: '#fffaf0', border: '1px solid #fbd38d', borderRadius: '6px', padding: '0.75rem 1rem', whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '0.9rem', color: '#2d3748' }}>{question.constraints}</div>
+          <div style={{ background: 'var(--color-canvas-subtle)', border: '1px solid var(--color-border-default)', borderRadius: 6, padding: '12px 16px', whiteSpace: 'pre-wrap', fontFamily: 'var(--mono)', fontSize: 13, lineHeight: 1.7 }}>
+            {question.constraints}
+          </div>
         </section>
       )}
-      {starterCode && Object.keys(starterCode).length > 0 && (
-        <section style={{ marginBottom: '1.5rem' }}>
+
+      {/* Starter Code */}
+      {langs.length > 0 && (
+        <section style={{ marginBottom: 24 }}>
           <h3>Starter Code</h3>
-          {Object.entries(starterCode).map(([lang, code]) => (
-            <div key={lang} style={{ marginBottom: '1rem' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: '600', textTransform: 'capitalize', color: '#4a5568', marginBottom: '0.25rem' }}>{lang}</div>
-              <pre style={{ backgroundColor: '#1a202c', color: '#e2e8f0', padding: '0.85rem 1rem', borderRadius: '6px', overflowX: 'auto', fontSize: '0.875rem', margin: 0, fontFamily: 'monospace' }}><code>{code}</code></pre>
-            </div>
-          ))}
+          {/* Language tabs */}
+          <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--color-border-default)', marginBottom: 0, background: '#161b22', borderRadius: '6px 6px 0 0', overflow: 'hidden' }}>
+            {langs.map((lang) => (
+              <button
+                key={lang}
+                onClick={() => setActiveTab(lang)}
+                style={{
+                  background: lang === currentTab ? '#0d1117' : 'transparent',
+                  border: 'none',
+                  borderBottom: lang === currentTab ? '2px solid #fd8c73' : '2px solid transparent',
+                  color: lang === currentTab ? '#e6edf3' : '#848d97',
+                  padding: '8px 16px',
+                  fontSize: 13,
+                  fontFamily: 'var(--mono)',
+                  cursor: 'pointer',
+                  textTransform: 'capitalize',
+                  transition: 'color 0.15s',
+                }}
+              >
+                {lang}
+              </button>
+            ))}
+          </div>
+          <pre style={{ borderRadius: '0 0 6px 6px', marginTop: 0 }}>
+            <code>{starterCode[currentTab] || ''}</code>
+          </pre>
         </section>
       )}
+
+      <div style={{ marginTop: 24 }}>
+        <Link to="/match" className="btn btn-primary">Start a live session →</Link>
+      </div>
     </div>
   );
 }
