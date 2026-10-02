@@ -21,3 +21,6 @@ build/
 Thumbs.db
 
 info.txt
+
+# External Datasets
+data/leetcode/raw/
