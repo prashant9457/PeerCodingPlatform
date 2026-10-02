@@ -2,8 +2,12 @@ import http from "node:http";
 import { app } from "./app.js";
 import { env } from "./config/env.js";
 import { pool } from "./db/pool.js";
+import { initSocketIO } from "./sockets/index.js";
 
 const server = http.createServer(app);
+
+// Attach Socket.IO to the same HTTP server
+initSocketIO(server);
 
 server.listen(env.PORT, async () => {
   console.log(
